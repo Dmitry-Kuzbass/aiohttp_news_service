@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SkillFactory News</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 40px;
+            background-color: #f4f7f6;
+        }
+
+        #status {
+            padding: 10px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        #news-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .news-item {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+
+        .time {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px;
+            width: 100%;
+            cursor: pointer;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Живая лента новостей (SkillFactory)</h1>
+    <div id="status" class="disconnected">Отключено</div>
+    <div id="news-container">
+        <h3>Сообщения:</h3>
+        <div id="news-list"></div>
+    </div>
+    <button onclick="sendPing()">Проверить соединение (Ping)</button>
+
+    <script>
+        let ws;
+        const statusDiv = document.getElementById('status');
+        const newsList = document.getElementById('news-list');
+
+        function connect() {
+            ws = new WebSocket(`ws://${window.location.host}/ws`);
+            ws.onopen = () => {
+                statusDiv.textContent = 'Подключено к серверу';
+                statusDiv.className = 'connected';
+            };
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'pong') {
+                    alert('Ответ от сервера: Pong! Связь в порядке.');
+                    return;
+                }
+                if (data.type === 'news') {
+                    const item = document.createElement('div');
+                    item.className = 'news-item';
+                    item.innerHTML = `<div class="time">${new Date().toLocaleTimeString()}</div><div>${data.text}</div>`;
+                    newsList.insertBefore(item, newsList.firstChild);
+                }
+            };
+            ws.onclose = () => {
+                statusDiv.textContent = 'Соединение закрыто окончательно';
+                statusDiv.className = 'disconnected';
+
+            };
+        }
+        function sendPing() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }
+        connect();
+    </script>
+</body>
+
+</html>
